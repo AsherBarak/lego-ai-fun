@@ -14,3 +14,4 @@ You can control the following properties by adjusting the constants in the scrip
 * Number of bricks in each image
 * What bricks would be included
 * What colors would the bricks be
+* Target folder for generated data
