@@ -1,3 +1,8 @@
+# This code generates lego brick piles for AI training.
+# Check https://github.com/AsherBarak/lego-ai-fun for more details.
+#
+# All rights reserved
+
 import bpy
 import random
 import mathutils
@@ -7,48 +12,54 @@ import queue
 import numpy as np
 
 # todo: setup input parameters:
+# Parameters that need to change between machines:
+SURFACE_IMAGES_DIR = "C:\\Users\\ASUS\\Documents\\FindMyLegoBrick_Private\\SyntheticDataGeneration\\Blender\\bpylego\\SurfaceImages"
+LDRAW_PATH = 'C:\\Users\\ASUS\\Documents\\Ldarw\\ldraw\\'
+LDRAW_LIB_PARTS_PATH = LDRAW_PATH+'parts\\'
 GENERATED_DATA_ROOT_PATH = '/temp'
-GENERATED_SCENES_COUNT = 1
+
+# Control parameters
+GENERATED_SCENES_COUNT = 100
 SCENE_FILE_PREFIX = datetime.now().strftime("%b_%d_%H_%M_")
 OBJECTS_IN_SCENE_COUNT_MAX = 150
 OBJECTS_IN_SCENE_COUNT_MIN = 100
 IMAGE_X_RESOLUTION = 640
 IMAGE_Y_RESOLUTION = 640
-IMAGE_RENDER_MAX_CYCLES = 100
-BRICK_NAME_PREFIX= 'Brick_'
-VIEWER_NAME_PREFIX = 'Viewer_'
+IMAGE_RENDER_MAX_CYCLES = 50
 TRAINING_BRICKS_FILE_NAMES = [
-    '4073',
-    '3023',
-    '3024',
-    '2780',
-    '98138',
-    '3069b',
-    '3004',
-    '54200',
-    '3710',
-    '3005',
-    '3020',
-    '3022',
-    '6558',
-    '15573',
-    '2412b',
-    '3070b',
-    '3021',
-    '3623',
-    '3666',
-    '3003',
-    '3010',
-    '11477',
-    '3001',
-    '85984',
-    '4274',
-    '2431',
-    '2420',
-    '3062b',
-    '15068',
-    '85861',
-    '43093', ]
+    # '4073',
+    # '3023',
+    # '3024',
+    # '2780',
+    # '98138',
+    # '3069b',
+    # '3004',
+    # '54200',
+    # '3710',
+    # '3005',
+    '3020', # flat 2x4
+    # '3022',
+    # '6558',
+    # '15573',
+    # '2412b',
+    # '3070b',
+    # '3021',
+    # '3623',
+    # '3666',
+    '3003', # standard 2x2
+    # '3010',
+    # '11477',
+    '3001', # standard 2x4
+    # '85984',
+    # '4274',
+    # '2431',
+    # '2420',
+    # '3062b',
+    # '15068',
+    # '85861',
+    # '43093',
+     ]
+# todo: use individual color frequesncies for different bricks
 TRAINING_BRICK_COLORS_RGB = [
     #"""Source: https://rebrickable.com/colors/"""
     [0x05131D, 153931,  'Black'],
@@ -64,15 +75,10 @@ TRAINING_BRICK_COLORS_RGB = [
     [0x237841, 17801, ' Green'],
     [0xFE8A18, 10549, ' Orange'],
 ]
-SURFACE_IMAGES_DIR = "C:\\Users\\ASUS\\Documents\\FindMyLegoBrick_Private\\SyntheticDataGeneration\\Blender\\bpylego\\SurfaceImages"
-LDRAW_PATH = 'C:\\Users\\ASUS\\Documents\\Ldarw\\ldraw\\'
-LDRAW_LIB_PARTS_PATH = LDRAW_PATH+'parts\\'
 
-current_scene_index=1
-current_scene_bricks=set()
-scene_folder_name=''
+BRICK_NAME_PREFIX= 'Brick_'
+VIEWER_NAME_PREFIX = 'Viewer_'
 
-# general constants
 SURFACE_SCALE = 5
 MAX_RANDOM_BRICK_HEIGHT = 8
 
@@ -80,16 +86,18 @@ bricks_colors_weights_sum = 0
 for color in TRAINING_BRICK_COLORS_RGB:
     bricks_colors_weights_sum += color[1]
 
+current_scene_index=1
+current_scene_bricks=set()
+scene_folder_name=''
+
 #################################
 # Utils
-
 
 def hex_to_rgb_old(hex_value):
     b = (hex_value & 0xFF) / 255.0
     g = ((hex_value >> 8) & 0xFF) / 255.0
     r = ((hex_value >> 16) & 0xFF) / 255.0
     return r, g, b, 1
-
 
 def srgb_to_linearrgb(c):
     if c < 0:
@@ -98,7 +106,6 @@ def srgb_to_linearrgb(c):
         return c/12.92
     else:
         return ((c+0.055)/1.055)**2.4
-
 
 def hex_to_rgb(h, alpha=1):
     r = (h & 0xff0000) >> 16
@@ -109,9 +116,7 @@ def hex_to_rgb(h, alpha=1):
 def point_camera_to_origin(camera, distance=10.0):
     looking_direction = camera.location - mathutils.Vector((0.0, 0.0, 0.0))
     rot_quat = looking_direction.to_track_quat('Z', 'Y')
-
     camera.rotation_euler = rot_quat.to_euler()
-    # Use * instead of @ for Blender <2.8
     camera.location = rot_quat @ mathutils.Vector((0.0, 0.0, distance))
 
 def bbox2(img):
@@ -119,16 +124,15 @@ def bbox2(img):
     cols = np.any(img, axis=0)
     rmin, rmax = np.where(rows)[0][[0, -1]]
     cmin, cmax = np.where(cols)[0][[0, -1]]
-
     return rmin, rmax, cmin, cmax
 
+# Parallel execution ustils:
 execution_queue = queue.Queue()
 
-# This function can savely be called in another thread.
+# This function can safely be called in another thread.
 # The function will be executed when the timer runs the next time.
 def run_in_main_thread(function):
     execution_queue.put(function)
-
 
 def execute_queued_functions():
     while not execution_queue.empty():
@@ -136,18 +140,25 @@ def execute_queued_functions():
         function()
     return 5.0
 
-
 bpy.app.timers.register(execute_queued_functions)
 
 ##################################
+# Main code
 
-# done once
+# Done once
 def set_blender():
     bpy.ops.object.delete()
     set_rendering()
     bpy.data.scenes["Scene"].view_layers["ViewLayer"].use_pass_cryptomatte_object = True
     bpy.context.scene.use_nodes = True
     
+def set_rendering():
+    scene = bpy.data.scenes["Scene"]
+    scene.render.engine = 'CYCLES'
+    scene.cycles.samples = IMAGE_RENDER_MAX_CYCLES
+    scene.render.resolution_x = IMAGE_X_RESOLUTION
+    scene.render.resolution_y = IMAGE_Y_RESOLUTION
+
 def clear_render_tree_and_create_layers_node():
     tree = bpy.context.scene.node_tree
     for every_node in tree.nodes:
@@ -160,13 +171,6 @@ def clear_render_tree_and_create_layers_node():
     link = links.new(render_layers_node.outputs[0], comp_node.inputs[0])
     # todo: consider adding a noise layer - https://blender.stackexchange.com/questions/84546/adding-random-noise-to-rendered-images
     return render_layers_node
-
-def set_rendering():
-    scene = bpy.data.scenes["Scene"]
-    scene.render.engine = 'CYCLES'
-    scene.cycles.samples = IMAGE_RENDER_MAX_CYCLES
-    scene.render.resolution_x = IMAGE_X_RESOLUTION
-    scene.render.resolution_y = IMAGE_Y_RESOLUTION
     
 def create_materials_dictionary():
     # Set one brick to initialize ldraw library
@@ -214,11 +218,10 @@ def create_file_output_node(directorypath, render_layers_node):
     file_output_node.location=(800,0)  
     return file_output_node
 
-
 def set_lighting():
     print('Lighting not implemented')
-    # consider area lighting to diffuse shadows
-    # consider multiple light sources (seem less frequest in pics we have)
+    # todo: consider area lighting to diffuse shadows
+    # todo: consider multiple light sources (seem less frequest in pics we have)
 
 def set_camera():
     camera=bpy.data.objects['Camera']
@@ -243,14 +246,12 @@ def create_surface():
     material = bpy.data.materials.new(name='SurfaceMaterial')
     material.use_nodes = True
     nodes = material.node_tree.nodes
+    # Surface material
     for node in nodes:
         material.node_tree.nodes.remove(node)
-        
-    #image_node = bpy.ops.node.add_node(type='ShaderNodeTexImage')
     image_node = nodes.new(type='ShaderNodeTexImage')
     texture_image_path=get_random_surface_image_path()
     image_node.image = bpy.data.images.load(texture_image_path)
-    
     principled_BSDF_node = nodes.new(type='ShaderNodeBsdfPrincipled')
     principled_BSDF_node.location = (400, 0)
     material.node_tree.links.new(
@@ -259,7 +260,6 @@ def create_surface():
     )
     output_material = nodes.new(type='ShaderNodeOutputMaterial')
     output_material.location = (800, 0)
-
     material.node_tree.links.new(
         principled_BSDF_node.outputs[0],
         output_material.inputs[0]
@@ -280,7 +280,6 @@ def delete_existing_bricks():
         bpy.data.meshes.remove(mesh)
 
 def pick_random_brick_color_hex():
-    """Picks a brick color randomly based on the colors distribution"""
     pick = random.randint(0, bricks_colors_weights_sum)
     sum_count = 0
     for color in TRAINING_BRICK_COLORS_RGB:
@@ -295,13 +294,18 @@ def animation_callback(scene):
         run_in_main_thread(bpy.ops.render.render)
 
 def render_complete_callback(a, b):
-    # increase number of complete renders
-    # run another render if needed
     run_in_main_thread(after_render_complete) 
 
 def after_render_complete():
     global current_scene_index
-    current_scene_index = current_scene_index +1
+    current_scene_index = current_scene_index + 1
+    # Disabled because cv2 dependency is not available in blender. We use another process to convert maps to box data
+    #write_render_data()
+    if (current_scene_index<(GENERATED_SCENES_COUNT+1)):
+        generate_and_render_scene(current_scene_index)
+
+def write_render_data():
+    # Collect render data
     f = open(GENERATED_DATA_ROOT_PATH+'\\'+scene_folder_name+"\\demofile2.txt", "a")
     for brick in current_scene_bricks:
         viewer_name=VIEWER_NAME_PREFIX +brick.name
@@ -314,10 +318,7 @@ def after_render_complete():
         # copy buffer to numpy array for faster manipulation
         arr = np.array(pixels[:]).reshape((IMAGE_X_RESOLUTION,IMAGE_Y_RESOLUTION,4))
         f.writelines(str(bbox2(arr))+'\n')
-
     f.close()
-    if (current_scene_index<(GENERATED_SCENES_COUNT+1)):
-        generate_and_render_scene(current_scene_index)
 
 def generate_and_render_scene(i_scene):
     create_surface()
@@ -357,7 +358,7 @@ def generate_and_render_scene(i_scene):
         bpy.ops.rigidbody.object_add(type='ACTIVE')
         # Mask file
         # this will need to change if we would like to have multiple angles on the same scene (we do not expect the scene setupe to be a big cost so maybe not)
-        brick_mask_file_name = SCENE_FILE_PREFIX+str(i_scene)+'_'+brick_id
+        brick_mask_file_name = SCENE_FILE_PREFIX+str(i_scene)+'_'+brick_id+'_'
         tree = bpy.context.scene.node_tree
         #id_mask_node = tree.nodes.new('CompositorNodeIDMask')
         cryptomatte_node = tree.nodes.new('CompositorNodeCryptomatteV2')
@@ -369,22 +370,25 @@ def generate_and_render_scene(i_scene):
             cryptomatte_node.outputs['Matte'],
             file_output_node.inputs[brick_mask_file_name]
         )
-        viewer_node = tree.nodes.new('CompositorNodeViewer')
-        viewer_node.name=VIEWER_NAME_PREFIX+brick.name
-        viewer_node.location=[800, -50*(i_brick+10)]
-        tree.links.new(
-            cryptomatte_node.outputs['Matte'],
-            viewer_node.inputs[0]
-        )
-
-
-
+        # We can't read the masks because we don't have cv2 so we don't need to generate the viewer nodes
+        #create_viewer_node(i_brick, brick, tree, cryptomatte_node)
+    # todo: add non lego bricks objects to increase picture fidelity
     bpy.context.scene.frame_set(0)
     bpy.app.handlers.frame_change_pre.append(animation_callback)
     bpy.ops.screen.animation_play()
+
+def create_viewer_node(i_brick, brick, tree, cryptomatte_node):
+    viewer_node = tree.nodes.new('CompositorNodeViewer')
+    viewer_node.name=VIEWER_NAME_PREFIX+brick.name
+    viewer_node.location=[800, -50*(i_brick+10)]
+    tree.links.new(
+            cryptomatte_node.outputs['Matte'],
+            viewer_node.inputs[0]
+        )
     # rendering is timed after animation completion in animation callback
 
-
+############################
+# startup code:
 set_blender()
 MATERIALS_DICTIONARY = create_materials_dictionary()
 bpy.app.handlers.render_post.append(render_complete_callback)
