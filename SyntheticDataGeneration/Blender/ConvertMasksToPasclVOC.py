@@ -1,5 +1,8 @@
 # This code converts the masks provided by blender into formatted lables data
 # The format used is Pascal VOC
+# Check https://github.com/AsherBarak/lego-ai-fun for more details.
+#
+# All rights reserved
 
 import cv2
 #import matplotlib

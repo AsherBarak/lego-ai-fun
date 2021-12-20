@@ -13,7 +13,7 @@ import numpy as np
 
 # todo: setup input parameters:
 # Parameters that need to change between machines:
-SURFACE_IMAGES_DIR = "C:\\Users\\ASUS\\Documents\\FindMyLegoBrick_Private\\SyntheticDataGeneration\\Blender\\bpylego\\SurfaceImages"
+SURFACE_IMAGES_DIR = "C:\\Users\\ASUS\\Documents\\lego-ai-fun\\SyntheticDataGeneration\\Blender\\SurfaceImages"
 LDRAW_PATH = 'C:\\Users\\ASUS\\Documents\\Ldarw\\ldraw\\'
 LDRAW_LIB_PARTS_PATH = LDRAW_PATH+'parts\\'
 GENERATED_DATA_ROOT_PATH = '/temp'
