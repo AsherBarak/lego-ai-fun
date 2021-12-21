@@ -16,16 +16,20 @@ import sys
 # Utils
 
 def is_file_mask(file):
-    # todo: replace with effective logic
+    #return file.name.startswith('Dec') and file.name.endswith('.png')
     return file.name.startswith('Mask_')
 
 def is_file_image(file):
+    #return file.name.startswith('Dec') and file.name.endswith('.jpg')
     return file.name.startswith('Img_')
 
 def generate_folder_PascalVOC(image_folder_path):
     masks=list()
     img=[]
     imageFile=''
+
+    folder_name=os.path.basename(os.path.normpath(image_folder_path))
+    # os.rename(image_folder_path+'\\Image.jpg', image_folder_path+'\\'+folder_name+'.jpg')
 
     for file in os.scandir(image_folder_path):
         if file.is_file():
@@ -70,12 +74,16 @@ def generate_folder_PascalVOC(image_folder_path):
 
     cv2.imwrite(image_folder_path+"/masks.jpg",img)
     et = etree.ElementTree(root)
+
+    
+    #et.write(image_folder_path+'/'+folder_name+'.xml', pretty_print=True)
     et.write(imageFile.path.replace('jpg','xml'), pretty_print=True)
 
 ##############################
 # Script content
 
-for el in os.scandir('C:\\temp\\Dec_20_22_26'):
+for el in os.scandir('C:\\temp'):
+
     try:
         if (el.is_dir()):
             generate_folder_PascalVOC(el.path)
