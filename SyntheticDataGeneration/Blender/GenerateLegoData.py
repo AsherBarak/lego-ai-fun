@@ -22,46 +22,46 @@ LDRAW_LIB_PARTS_PATH = LDRAW_PATH+'parts\\'
 GENERATED_DATA_ROOT_PATH = '/temp'
 
 # Control parameters
-GENERATED_SCENES_COUNT = 2
+GENERATED_SCENES_COUNT = 20
 BATCH_FOLDER_NAME = datetime.now().strftime("%b_%d_%H_%M")
 BATCH_FILE_PREFIX = BATCH_FOLDER_NAME+"_"
-OBJECTS_IN_SCENE_COUNT_MAX = 4
-OBJECTS_IN_SCENE_COUNT_MIN = 3
+OBJECTS_IN_SCENE_COUNT_MAX = 150
+OBJECTS_IN_SCENE_COUNT_MIN = 100
 IMAGE_X_RESOLUTION = 640
 IMAGE_Y_RESOLUTION = 640
-IMAGE_RENDER_MAX_CYCLES = 10  # 50
+IMAGE_RENDER_MAX_CYCLES = 50
 TRAINING_BRICKS_FILE_NAMES = [
-    # '4073',
-    # '3023',
-    # '3024',
-    # '2780',
-    # '98138',
-    # '3069b',
-    # '3004',
-    # '54200',
-    # '3710',
-    # '3005',
-    '3020',  # flat 2x4
-    # '3022',
-    # '6558',
-    # '15573',
-    # '2412b',
-    # '3070b',
-    # '3021',
-    # '3623',
-    # '3666',
-    '3003',  # standard 2x2
-    # '3010',
-    # '11477',
     '3001',  # standard 2x4
-    # '85984',
-    # '4274',
-    # '2431',
-    # '2420',
-    # '3062b',
-    # '15068',
-    # '85861',
-    # '43093',
+    '3003',  # standard 2x2
+    '3020',  # flat 2x4
+    '4073',
+    '3023',
+    '3024',
+    '2780',
+    '98138',
+    '3069b',
+    '3004',
+    '54200',
+    '3710',
+    '3005',
+    '3022',
+    '6558',
+    '15573',
+    '2412b',
+    '3070b',
+    '3021',
+    '3623',
+    '3666',
+    '3010',
+    '11477',
+    '85984',
+    '4274',
+    '2431',
+    '2420',
+    '3062b',
+    '15068',
+    '85861',
+    '43093',
 ]
 # todo: use individual color frequesncies for different bricks
 TRAINING_BRICK_COLORS_RGB = [
