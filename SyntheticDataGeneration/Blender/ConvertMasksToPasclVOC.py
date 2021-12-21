@@ -51,7 +51,7 @@ def generate_folder_PascalVOC(image_folder_path):
     etree.SubElement(root, "segmented").text="0"
     size = etree.SubElement(root, "size")
     etree.SubElement(size, "width").text=str(img.shape[1])
-    etree.SubElement(size, "width").text=str(img.shape[0])
+    etree.SubElement(size, "height").text=str(img.shape[0])
     etree.SubElement(size, "depth").text=str(img.shape[2])
 
     for mask in masks:
@@ -70,7 +70,7 @@ def generate_folder_PascalVOC(image_folder_path):
             etree.SubElement(bndbox, "xmin").text=str(x)
             etree.SubElement(bndbox, "ymin").text=str(y)
             etree.SubElement(bndbox, "xmax").text=str(x+w)
-            etree.SubElement(bndbox, "xmax").text=str(y+h)
+            etree.SubElement(bndbox, "ymax").text=str(y+h)
 
     cv2.imwrite(image_folder_path+"/masks.jpg",img)
     et = etree.ElementTree(root)
