@@ -33,30 +33,32 @@ def float_feature(value):
 def float_list_feature(value):
     return tf.train.Feature(float_list=tf.train.FloatList(value=value))
 
+
 def recursive_parse_xml_to_dict(xml):
-  """Recursively parses XML contents to python dict.
+    """Recursively parses XML contents to python dict.
 
-  We assume that `object` tags are the only ones that can appear
-  multiple times at the same level of a tree.
+    We assume that `object` tags are the only ones that can appear
+    multiple times at the same level of a tree.
 
-  Args:
-    xml: xml tree obtained by parsing XML file contents using lxml.etree
+    Args:
+      xml: xml tree obtained by parsing XML file contents using lxml.etree
 
-  Returns:
-    Python dictionary holding XML contents.
-  """
-  if not xml:
-    return {xml.tag: xml.text}
-  result = {}
-  for child in xml:
-    child_result = recursive_parse_xml_to_dict(child)
-    if child.tag != 'object':
-      result[child.tag] = child_result[child.tag]
-    else:
-      if child.tag not in result:
-        result[child.tag] = []
-      result[child.tag].append(child_result[child.tag])
-  return {xml.tag: result}
+    Returns:
+      Python dictionary holding XML contents.
+    """
+    if not xml:
+        return {xml.tag: xml.text}
+    result = {}
+    for child in xml:
+        child_result = recursive_parse_xml_to_dict(child)
+        if child.tag != 'object':
+            result[child.tag] = child_result[child.tag]
+        else:
+            if child.tag not in result:
+                result[child.tag] = []
+            result[child.tag].append(child_result[child.tag])
+    return {xml.tag: result}
+
 
 def dict_to_tf_example(input_folder_path, xml, label_map_dict, ignore_difficult_instances=False):
     data = recursive_parse_xml_to_dict(xml)['annotation']
@@ -71,9 +73,7 @@ def dict_to_tf_example(input_folder_path, xml, label_map_dict, ignore_difficult_
     key = hashlib.sha256(encoded_jpg).hexdigest()
 
     width = int(data['size']['width'])
-    #todo: fix
-    height =width
-    #height = int(data['size']['height'])
+    height = int(data['size']['height'])
 
     xmin = []
     ymin = []
@@ -91,7 +91,7 @@ def dict_to_tf_example(input_folder_path, xml, label_map_dict, ignore_difficult_
                 continue
 
             global current_lable_id
-            obj_name = str(obj['name'].encode('utf8'))
+            obj_name = obj['name']
             if obj_name not in label_map_dict:
                 label_map_dict[obj_name] = current_lable_id
                 current_lable_id += 1
@@ -139,7 +139,7 @@ def convert(input_folder_path, output_folder, output_file_prefix,train_proportio
     lable_map_file_name = os.path.join(
         output_folder, output_file_prefix+'_label_map.pbtxt')
 
-    label_map_dict ={'tt':0}
+    label_map_dict = {}
 
     for el in os.scandir(input_folder_path):
         if (el.is_file) and el.name.endswith('.xml'):
@@ -164,6 +164,7 @@ def convert(input_folder_path, output_folder, output_file_prefix,train_proportio
         f.write('   display_name: "'+label[0]+'",\n')
         f.write('}\n')
     f.close()
+
 
 ###############################
 # run
