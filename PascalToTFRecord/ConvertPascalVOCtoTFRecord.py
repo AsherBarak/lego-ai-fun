@@ -3,6 +3,7 @@ import hashlib
 import io
 import logging
 import os
+import random
 
 from lxml import etree
 import PIL.Image
@@ -66,7 +67,7 @@ def dict_to_tf_example(input_folder_path, xml, label_map_dict, ignore_difficult_
     encoded_jpg_io = io.BytesIO(encoded_jpg)
     image = PIL.Image.open(encoded_jpg_io)
     if image.format != 'JPEG':
-        raise ValueError('Image format not JPEG')
+        raise ValueError('Image format not JPEG '+image.format)
     key = hashlib.sha256(encoded_jpg).hexdigest()
 
     width = int(data['size']['width'])
@@ -101,7 +102,7 @@ def dict_to_tf_example(input_folder_path, xml, label_map_dict, ignore_difficult_
             ymin.append(float(obj['bndbox']['ymin']) / height)
             xmax.append(float(obj['bndbox']['xmax']) / width)
             ymax.append(float(obj['bndbox']['ymax']) / height)
-            classes_text.append(obj_name)
+            classes_text.append(obj['name'].encode('utf8'))
             classes.append(label_map_dict[obj_name])
             truncated.append(int(obj['truncated']))
             poses.append(obj['pose'].encode('utf8'))
@@ -129,10 +130,12 @@ def dict_to_tf_example(input_folder_path, xml, label_map_dict, ignore_difficult_
     return example
 
 
-def convert(input_folder_path, output_folder, output_file_prefix):
+def convert(input_folder_path, output_folder, output_file_prefix,train_proportion, test_proportion,):
 
-    writer = tf.python_io.TFRecordWriter(os.path.join(
-        output_folder, output_file_prefix+'.record'))
+    train_writer = tf.python_io.TFRecordWriter(os.path.join(
+        output_folder, output_file_prefix+'_train.record'))
+    test_writer = tf.python_io.TFRecordWriter(os.path.join(
+        output_folder, output_file_prefix+'_test.record'))
     lable_map_file_name = os.path.join(
         output_folder, output_file_prefix+'_label_map.pbtxt')
 
@@ -145,25 +148,32 @@ def convert(input_folder_path, output_folder, output_file_prefix):
             xml = etree.fromstring(xml_str)
             tf_example = dict_to_tf_example(
                 input_folder_path, xml, label_map_dict)
-            writer.write(tf_example.SerializeToString())
-    writer.close()
+
+            if (random.uniform(0, train_proportion+test_proportion)<train_proportion):
+                train_writer.write(tf_example.SerializeToString())
+            else:
+                test_writer.write(tf_example.SerializeToString())
+    train_writer.close()
+    test_writer.close()
 
     f=open(lable_map_file_name,'w')
-    for lable in label_map_dict.items():
+    for label in label_map_dict.items():
         f.write('item {\n')
-        f.write('   name: "'+lable+'",\n')
-        f.write('   id: "'+label_map_dict[lable]+'",\n')
-        f.write('   display_name: "'+lable+'",\n')
+        f.write('   name: "'+label[0]+'",\n')
+        f.write('   id: "'+str(label[1])+'",\n')
+        f.write('   display_name: "'+label[0]+'",\n')
         f.write('}\n')
     f.close()
 
 ###############################
 # run
-INPUT_FOLDER_PATH = 'C:\\temp\\Dec_19_22_43_2'
+INPUT_FOLDER_PATH = 'C:\\temp\\Data_Dec_19_22_43'
 OUTPUT_FOLDER = 'C:\\temp\\TFRecords'
 OUTPUT_FILE_PREFIX = 'Dec_19_22_43_2'
+TRAIN_PROPOTION = 90
+TEST_PROPORTION = 10
 
 # global counter
 current_lable_id = 1
 
-convert(INPUT_FOLDER_PATH, OUTPUT_FOLDER, OUTPUT_FILE_PREFIX)
+convert(INPUT_FOLDER_PATH, OUTPUT_FOLDER, OUTPUT_FILE_PREFIX, TRAIN_PROPOTION, TEST_PROPORTION)

@@ -21,7 +21,7 @@ def is_file_mask(file):
 
 def is_file_image(file):
     #return file.name.startswith('Dec') and file.name.endswith('.jpg')
-    return file.name.startswith('Img_')
+    return file.name.startswith('Img_') and file.name.endswith('.jpg')
 
 def generate_folder_PascalVOC(image_folder_path):
     masks=list()
@@ -59,7 +59,7 @@ def generate_folder_PascalVOC(image_folder_path):
         if len(contours)>0:
             x,y,w,h = cv2.boundingRect(contours[0])
             img=cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),1)
-            brick_name=mask[0].name.split("_")[5]
+            brick_name=mask[0].name.split("_")[6]
             object=etree.SubElement(root,"object")
             etree.SubElement(object, "name").text=brick_name
             etree.SubElement(object, "pose").text="Unspecified"
@@ -82,8 +82,9 @@ def generate_folder_PascalVOC(image_folder_path):
 ##############################
 # Script content
 
-for el in os.scandir('C:\\temp'):
-
+for el in os.scandir('C:\\temp\\Dec_21_23_01'):
+    if (el.is_dir()):
+                generate_folder_PascalVOC(el.path)
     try:
         if (el.is_dir()):
             generate_folder_PascalVOC(el.path)
