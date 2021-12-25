@@ -160,7 +160,7 @@ def convert(input_folder_path, output_folder, output_file_prefix,train_proportio
     for label in label_map_dict.items():
         f.write('item {\n')
         f.write('   name: "'+label[0]+'",\n')
-        f.write('   id: "'+str(label[1])+'",\n')
+        f.write('   id: '+str(label[1])+',\n')
         f.write('   display_name: "'+label[0]+'",\n')
         f.write('}\n')
     f.close()

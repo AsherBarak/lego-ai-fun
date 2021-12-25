@@ -23,6 +23,26 @@ def is_file_image(file):
     #return file.name.startswith('Dec') and file.name.endswith('.jpg')
     return file.name.startswith('Img_') and file.name.endswith('.jpg')
 
+def get_mask_bounding_box(mask_image):
+        
+    xmin=0
+    xmax=0
+    ymin=0
+    ymax=0
+
+    for x in range(mask_image.width):
+        for y in range(mask_image.height):
+            p=mask_image.getpixel((x,y))
+            if p:
+                if xmin==0: xmin=x 
+                else: xmax=x
+                if ymin==0: ymin=y 
+                else: ymax=y
+    return xmin, ymin, xmax, ymax
+
+
+################################
+
 def generate_folder_PascalVOC(image_folder_path):
     masks=list()
     img=[]
@@ -57,8 +77,18 @@ def generate_folder_PascalVOC(image_folder_path):
     for mask in masks:
         contours,_=cv2.findContours(mask[1],1,1)
         if len(contours)>0:
-            x,y,w,h = cv2.boundingRect(contours[0])
-            img=cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),1)
+
+            boxes=[]
+            for c in contours:
+                (x, y, w, h) = cv2.boundingRect(c)
+                boxes.append([x,y, x+w,y+h])
+
+            boxes = np.asarray(boxes)
+            left, top = np.min(boxes, axis=0)[:2]
+            right, bottom = np.max(boxes, axis=0)[2:]
+
+            # x,y,w,h = cv2.boundingRect(contours[0])
+            img=cv2.rectangle(img,(left,top),(right,bottom),(255,0,0),1)
             brick_name=mask[0].name.split("_")[6]
             object=etree.SubElement(root,"object")
             etree.SubElement(object, "name").text=brick_name
@@ -67,10 +97,10 @@ def generate_folder_PascalVOC(image_folder_path):
             etree.SubElement(object, "difficult").text="0"
             etree.SubElement(object, "occluded").text="0"
             bndbox=etree.SubElement(object,"bndbox")
-            etree.SubElement(bndbox, "xmin").text=str(x)
-            etree.SubElement(bndbox, "ymin").text=str(y)
-            etree.SubElement(bndbox, "xmax").text=str(x+w)
-            etree.SubElement(bndbox, "ymax").text=str(y+h)
+            etree.SubElement(bndbox, "xmin").text=str(left)
+            etree.SubElement(bndbox, "ymin").text=str(top)
+            etree.SubElement(bndbox, "xmax").text=str(right)
+            etree.SubElement(bndbox, "ymax").text=str(bottom)
 
     cv2.imwrite(image_folder_path+"/masks.jpg",img)
     et = etree.ElementTree(root)
