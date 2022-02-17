@@ -746,7 +746,7 @@ def generate_and_render_scene(i_scene):
             current_scene_bricks.add(brick)
             brick.name = BRICK_NAME_PREFIX+brick_id
             brick.material_slots[0].link = 'OBJECT'
-            color = pick_random_brick_color_hex()  #need to rewrite
+            color = get_rgb(element_id_to_design_id_color(brickArray[0])[1])
             brick.material_slots[0].material = MATERIALS_DICTIONARY[color]
  
  
