@@ -2,13 +2,16 @@
 from gimpfu import *
 import csv
 
-def selectionMargins(image):
+CSV_PATH = "C:\\Users\\Elisar\\Desktop\\temp.csv"
+
+
+def get_rec_position_to_csv(image):
     selection,x1,y1,x2,y2=pdb.gimp_selection_bounds(image)
     if not selection:
         pdb.gimp_message("No selection")
     else:
         gimp.message('L=%d\nU=%d\nR=%d\nD=%d' % (x1,y1,x2-x1,y2-y1))
-        f = open("C:\\Users\\Elisar\\Desktop\\temp.csv", 'ab')
+        f = open(csv_path, 'ab')
         writer = csv.writer(f)
         writer.writerow([x1,y2,x2-x1,y2-y1])
         f.close()
@@ -16,9 +19,9 @@ def selectionMargins(image):
 ### Registration
 desc='Show selection margins'
 register(
-    'selection-margins',desc,desc,'','','2019',desc,'*',
+    'selection-margins',desc,desc,'Elisar-Eisenbach','LEGO-AI-FUN','2022',desc,'*',
     [(PF_IMAGE, "image", "Input image", None),],[],
-    selectionMargins,menu="<Image>/Select"
+    get_rec_position_to_csv,menu="<Image>/Select"
 )
 
 main()
