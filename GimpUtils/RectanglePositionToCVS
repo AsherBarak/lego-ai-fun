@@ -11,7 +11,7 @@ def get_rec_position_to_csv(image):
         pdb.gimp_message("No selection")
     else:
         gimp.message('L=%d\nU=%d\nR=%d\nD=%d' % (x1,y1,x2-x1,y2-y1))
-        f = open(csv_path, 'ab')
+        f = open(CSV_PATH, 'ab')
         writer = csv.writer(f)
         writer.writerow([x1,y2,x2-x1,y2-y1])
         f.close()
